@@ -50,11 +50,10 @@ spec:
       runtime: python3-9
       source: |
         def handler(msg, context):
-            import json, time, pathlib
+            import json, pathlib
             message = msg.decode("UTF-8")
             message_obj = json.loads(message)
             print('Step 3, prep for s3 upload', message_obj['__key__'])
-            time.sleep(5)
             file_path = '/var/run/argo-dataflow/message'
             pathlib.Path(file_path).write_text(message, 'utf-8')
             message_obj['path'] = file_path

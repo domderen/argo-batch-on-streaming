@@ -151,6 +151,9 @@ async def run(loop: AbstractEventLoop, workflow_name: str, inputs_count: int):
       break
     time.sleep(2)
 
+  # Give EventSource & Sensor time to initialize
+  await asyncio.sleep(5)
+
   # Use borrowed connection for NATS then mount NATS Streaming
   # client on top.
   nc = NATS()
