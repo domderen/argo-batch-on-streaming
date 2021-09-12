@@ -1,0 +1,76 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: batch-on-stream
+spec:
+  entrypoint: bash-script-example
+  templates:
+    - name: bash-script-example
+      dag:
+        tasks:
+        - name: wait-for-argo-events-sensor
+          template: wait-for-argo-events-sensor
+        - name: send-messages-to-dataflow
+          template: send-messages-to-dataflow
+        - name: print-dataflow-processed-messages
+          template: print-dataflow-processed-messages
+          dependencies: [wait-for-argo-events-sensor]
+        - name: delete-event-source
+          template: delete-event-source
+          dependencies: [wait-for-argo-events-sensor]
+        - name: delete-sensor
+          template: delete-sensor
+          dependencies: [wait-for-argo-events-sensor]
+
+    # - name: ensure-s3-bucket-exists
+    #   script:
+    #     image: amazon/aws-cli:latest
+    #     command: ['/bin/bash']
+    #     source: |
+    #       echo "Starting ensure-s3-bucket-exists"
+    #       export AWS_ACCESS_KEY_ID=admin
+    #       export AWS_SECRET_ACCESS_KEY=password
+    #       export AWS_DEFAULT_REGION=us-west-2
+    #       aws --endpoint-url='http://moto:5000' s3api create-bucket --bucket output-bucket
+    #       echo "Completed ensure-s3-bucket-exists"
+    
+    - name: wait-for-argo-events-sensor
+      suspend: {}
+
+    - name: send-messages-to-dataflow
+      container:
+        image: send-messages-to-workflow:1
+        args: ["{{workflow.name}}", "5"]
+
+    - name: print-dataflow-processed-messages
+      script:
+        image: amazon/aws-cli:latest
+        command: ['/bin/bash']
+        source: |
+          echo "Starting print-dataflow-processed-messages"
+          yum install jq -y
+          cd ~
+          export AWS_ACCESS_KEY_ID=admin
+          export AWS_SECRET_ACCESS_KEY=password
+          export AWS_DEFAULT_REGION=us-west-2
+          aws --endpoint-url='http://moto:5000' s3 cp s3://output-bucket/ ./results --recursive
+          jq '.' results/*
+          echo "Completed print-dataflow-processed-messages"
+
+    - name: delete-event-source
+      resource:
+        action: delete
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: EventSource
+          metadata:
+            name: wait-for-events-{{workflow.name}}-es
+    
+    - name: delete-sensor
+      resource:
+        action: delete
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Sensor
+          metadata:
+            name: unsuspend-workflow-{{workflow.name}}-s

@@ -1,0 +1,73 @@
+apiVersion: dataflow.argoproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  annotations:
+    dataflow.argoproj.io/description: |-
+      This example shows a example of having two nodes in a pipeline.
+
+      While they read from Kafka, they are connected by a NATS Streaming subject.
+    dataflow.argoproj.io/owner: argoproj-labs
+  name: 101-two-node
+spec:
+  steps:
+  - code:
+      runtime: python3-9
+      source: |
+        def handler(msg, context):
+            import json
+            message = json.loads(msg.decode("UTF-8"))
+            print('Step 1, augmenting data', message['__key__'])
+            message['step1'] = f"Applying Step 1 on {message['key']}"
+            return json.dumps(message).encode("UTF-8")
+    name: step1
+    sinks:
+    - stan:
+        subject: a-b
+    sources:
+    - stan:
+        subject: stream-input
+
+
+  - code:
+      runtime: python3-9
+      source: |
+        def handler(msg, context):
+            import json
+            message = json.loads(msg.decode("UTF-8"))
+            print('Step 2, augmenting data', message['__key__'])
+            message['step2'] = f"Applying Step 2 on {message['key']}"
+            return json.dumps(message).encode("UTF-8")
+    name: step2
+    sources:
+    - stan:
+        subject: a-b
+    sinks:
+    - stan:
+        subject: b-c
+  
+
+  - code:
+      runtime: python3-9
+      source: |
+        def handler(msg, context):
+            import json, time, pathlib
+            message = msg.decode("UTF-8")
+            message_obj = json.loads(message)
+            print('Step 3, prep for s3 upload', message_obj['__key__'])
+            time.sleep(5)
+            file_path = '/var/run/argo-dataflow/message'
+            pathlib.Path(file_path).write_text(message, 'utf-8')
+            message_obj['path'] = file_path
+            return json.dumps({"path": file_path, "key": message_obj['__key__']}).encode("UTF-8")
+    name: prep-for-s3-upload
+    sources:
+    - stan:
+        subject: b-c
+    sinks:
+    - s3:
+        bucket: output-bucket
+    - name: kafkaoutput
+      kafka:
+        topic: stream-output
+
+  

@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: initialize-s3-bucket
+spec:
+  template:
+    spec:
+      containers:
+      - name: awscli
+        image: debian:9.4
+        command: ["/bin/bash"]
+        args: ["/scripts/init-s3-bucket.sh"]
+        volumeMounts:
+        - name: wrapper
+          mountPath: /scripts
+      restartPolicy: Never
+      volumes:
+      - name: wrapper
+        configMap:
+          name: moto-init-script
+  backoffLimit: 4

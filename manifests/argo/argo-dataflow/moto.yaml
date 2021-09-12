@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    dataflow.argoproj.io/description: |
+      This is an example of providing a namespace named S3 configuration.
+      The secret must be named `dataflow-s3-${name}`.
+      [Learn about configuration](../docs/CONFIGURATION.md)
+  name: dataflow-s3-default
+  namespace: argo-dataflow-system
+stringData:
+  accessKeyId: admin
+  credentials.accessKeyId.key: accessKeyId
+  credentials.accessKeyId.name: dataflow-s3-default
+  credentials.secretAccessKey.key: secretAccessKey
+  credentials.secretAccessKey.name: dataflow-s3-default
+  credentials.sessionToken.key: sessionToken
+  credentials.sessionToken.name: dataflow-s3-default
+  endpoint.url: http://moto:5000
+  region: us-west-2
+  secretAccessKey: password
+  sessionToken: ""
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: moto
+  name: moto
+  namespace: argo-dataflow-system
+spec:
+  ports:
+  - port: 5000
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: moto
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: moto
+  name: moto
+  namespace: argo-dataflow-system
+spec:
+  selector:
+    matchLabels:
+      app: moto
+  serviceName: moto
+  template:
+    metadata:
+      labels:
+        app: moto
+    spec:
+      containers:
+      - command:
+        - /usr/local/bin/moto_server
+        - -H
+        - 0.0.0.0
+        image: motoserver/moto:2.2.4
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /
+            port: 5000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 10
+        name: main
+        ports:
+        - containerPort: 5000
+        readinessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /
+            port: 5000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 10

@@ -1,0 +1,7 @@
+{
+  "python.analysis.extraPaths": [
+    "./docker_images/send-messages-to-workflow",
+    "./docker_images/send-messages-to-workflow/venv",
+  ],
+  "python.pythonPath": "docker_images/send-messages-to-workflow/venv/bin/python",
+}

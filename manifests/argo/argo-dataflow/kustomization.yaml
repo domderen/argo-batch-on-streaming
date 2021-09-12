@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: argo-dataflow-system
+
+resources:
+  - github.com/argoproj-labs/argo-dataflow/config/default?ref=v0.0.101
+  - github.com/argoproj-labs/argo-dataflow/config/apps/testapi?ref=v0.0.101
+  - kafka.yaml
+  - moto.yaml
+  - stan.yaml
+  - argo-server-dataflow.rb.yaml
+
+patchesStrategicMerge:
+  - deployment-args.yaml
+
+images:
+- name: quay.io/argoprojlabs/dataflow-controller
+  newTag: v0.0.101
