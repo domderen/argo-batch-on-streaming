@@ -21,18 +21,6 @@ spec:
         - name: delete-sensor
           template: delete-sensor
           dependencies: [wait-for-argo-events-sensor]
-
-    # - name: ensure-s3-bucket-exists
-    #   script:
-    #     image: amazon/aws-cli:latest
-    #     command: ['/bin/bash']
-    #     source: |
-    #       echo "Starting ensure-s3-bucket-exists"
-    #       export AWS_ACCESS_KEY_ID=admin
-    #       export AWS_SECRET_ACCESS_KEY=password
-    #       export AWS_DEFAULT_REGION=us-west-2
-    #       aws --endpoint-url='http://moto:5000' s3api create-bucket --bucket output-bucket
-    #       echo "Completed ensure-s3-bucket-exists"
     
     - name: wait-for-argo-events-sensor
       suspend: {}
