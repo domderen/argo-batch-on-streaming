@@ -1,16 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: batch-on-stream
+  name: batch-on-stream-without-argo-events
 spec:
-  entrypoint: batch-on-stream
+  artifactRepositoryRef:
+    configMap: s3-artifact-config
+    key: default-v1
+
+  entrypoint: bash-script-example
   arguments:
     parameters:
     - name: input-count
       value: 5
 
   templates:
-    - name: batch-on-stream
+    - name: bash-script-example
       dag:
         tasks:
         - name: wait-for-argo-events-sensor
@@ -34,6 +38,12 @@ spec:
       container:
         image: send-messages-to-workflow:1
         args: ["{{workflow.name}}", "{{workflow.parameters.input-count}}"]
+      outputs:
+        artifacts:
+        # generate hello-art artifact from /tmp/hello_world.txt
+        # artifacts can be directories as well as files
+        - name: hello-art
+          path: /tmp/hello_world.txt
 
     - name: print-dataflow-processed-messages
       script:

@@ -1,0 +1,1 @@
+- Try to get rid of kafka, and use only nats streaming to communicate between argo-dataflow & argo-events.

@@ -1,0 +1,17 @@
+s3:
+  bucket: artifacts
+  endpoint: moto:5000
+  insecure: true
+  region: us-west-2
+  keyFormat: "my-artifacts\
+        /{{workflow.creationTimestamp.Y}}\
+        /{{workflow.creationTimestamp.m}}\
+        /{{workflow.creationTimestamp.d}}\
+        /{{workflow.name}}\
+        /{{pod.name}}"
+  accessKeySecret:
+    name: dataflow-s3-default
+    key: accessKeyId
+  secretKeySecret:
+    name: dataflow-s3-default
+    key: secretAccessKey

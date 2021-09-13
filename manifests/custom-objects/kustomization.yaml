@@ -14,3 +14,13 @@ configMapGenerator:
   - init-s3-bucket.sh=init-s3-bucket.sh
   options:
     disableNameSuffixHash: true
+- name: s3-artifact-config
+  behavior: create
+
+  files:
+  - default-v1=s3-artifact-config.yaml
+  options:
+    annotations:
+      # v3.0 and after - if you want to use a specific key, put that's key into this annotation 
+      workflows.argoproj.io/default-artifact-repository: default-v1
+    disableNameSuffixHash: true
