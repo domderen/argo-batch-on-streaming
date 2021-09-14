@@ -34,19 +34,23 @@ async def run(loop: AbstractEventLoop, workflow_name: str, inputs_count: int):
 
   async def message_handler(msg):
     nonlocal processed_inputs_count, all_inputs_processed_future
-    print('inside message handler')
-    print(msg)
-    subject = msg.subject
-    reply = msg.reply
-    data = msg.data.decode()
-    print("Received a message on '{subject} {reply}': {data}".format(
-        subject=subject, reply=reply, data=data))
-    processed_inputs_count = processed_inputs_count + 1
-    if len(processed_inputs_count) == len(inputs):
-      all_inputs_processed_future.set_result()
+    try:
+      print('inside message handler')
+      print(msg)
+      print(msg.seq)
+      print(msg.data)
+      processed_inputs_count = processed_inputs_count + 1
+      print('counts', processed_inputs_count, len(inputs))
+      if processed_inputs_count == len(inputs):
+        all_inputs_processed_future.set_result(None)
+    except BaseException as err:
+      print('Got an error trying to handle message from nats stan', err)
 
-  await sc.subscribe('argo-dataflow-system.pipeline-without-argo-events.stream-output', cb=message_handler)
-  await nc.subscribe('argo-dataflow-system.pipeline-without-argo-events.stream-output', cb=message_handler)
+  async def error_handler(err):
+    print('Hitting an error handler, why?', err)
+
+
+  sub = await sc.subscribe('argo-dataflow-system.pipeline-without-argo-events.stream-output', cb=message_handler, error_cb=error_handler)
 
   # Synchronous Publisher, does not return until an ack
   # has been received from NATS Streaming.
@@ -55,15 +59,20 @@ async def run(loop: AbstractEventLoop, workflow_name: str, inputs_count: int):
     print('Sending input to dataflow', msg)
     await sc.publish(subject="argo-dataflow-system.pipeline-without-argo-events.stream-input", payload=msg.encode('utf-8'))
 
+  print('All inputs sent to dataflow, waiting for them to come back.')
+  await all_inputs_processed_future
+  print('All inputs were processed by dataflow, finishing.')
+
+  await sub.unsubscribe()
+
   # Close NATS Streaming session
   await sc.close()
 
   # We are using a NATS borrowed connection so we need to close manually.
   await nc.close()
 
-  print('All inputs sent to dataflow, waiting for them to come back.')
-  await all_inputs_processed_future
-  print('All inputs were processed by dataflow, finishing.')
+  
+  
 
 if __name__ == '__main__':
   print(sys.argv)
