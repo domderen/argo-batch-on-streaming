@@ -4,8 +4,10 @@ namespace: argo-dataflow-system
 resources:
 - moto-init.task.yaml
 - default.eventbus.yaml
-- pipeline.yaml
-- workflowtemplate.yaml
+- pipeline-with-argo-events.yaml
+- pipeline-without-argo-events.yaml
+- workflowtemplate-with-argo-events.yaml
+- workflowtemplate-without-argo-events.yaml
 
 configMapGenerator:
 - name: moto-init-script

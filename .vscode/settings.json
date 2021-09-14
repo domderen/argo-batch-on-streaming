@@ -1,7 +1,9 @@
 {
   "python.analysis.extraPaths": [
-    "./docker_images/send-messages-to-workflow",
-    "./docker_images/send-messages-to-workflow/venv",
+    "./docker_images/with-argo-events/",
+    "./docker_images/with-argo-events/venv",
+    "./docker_images/without-argo-events",
+    "./docker_images/without-argo-events/venv",
   ],
-  "python.pythonPath": "docker_images/send-messages-to-workflow/venv/bin/python",
+  "python.pythonPath": "./docker_images/without-argo-events/venv/bin/python",
 }

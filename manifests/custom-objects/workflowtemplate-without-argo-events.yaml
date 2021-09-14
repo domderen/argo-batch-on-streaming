@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: without-argo-events
+spec:
+  entrypoint: main-template
+  arguments:
+    parameters:
+    - name: input-count
+      value: 5
+
+  templates:
+    - name: main-template
+      dag:
+        tasks:
+        - name: send-messages-to-dataflow-and-wait
+          template: send-messages-to-dataflow-and-wait
+        - name: print-dataflow-processed-messages
+          template: print-dataflow-processed-messages
+          dependencies: [send-messages-to-dataflow-and-wait]
+
+    - name: send-messages-to-dataflow-and-wait
+      container:
+        image: without-argo-events:1
+        args: ["{{workflow.name}}", "{{workflow.parameters.input-count}}"]
+
+    - name: print-dataflow-processed-messages
+      script:
+        image: amazon/aws-cli:latest
+        command: ['/bin/bash']
+        source: |
+          echo "Starting print-dataflow-processed-messages"
+          yum install jq -y
+          cd ~
+          export AWS_ACCESS_KEY_ID=admin
+          export AWS_SECRET_ACCESS_KEY=password
+          export AWS_DEFAULT_REGION=us-west-2
+          aws --endpoint-url='http://moto:5000' s3 cp s3://output-bucket/{{workflow.name}}/ ./results --recursive
+          jq '.' results/*
+          echo "Completed print-dataflow-processed-messages"

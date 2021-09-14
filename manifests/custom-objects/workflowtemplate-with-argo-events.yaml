@@ -1,16 +1,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: batch-on-stream
+  name: with-argo-events
 spec:
-  entrypoint: bash-script-example
+  entrypoint: main-template
   arguments:
     parameters:
     - name: input-count
       value: 5
 
   templates:
-    - name: bash-script-example
+    - name: main-template
       dag:
         tasks:
         - name: wait-for-argo-events-sensor
@@ -32,7 +32,7 @@ spec:
 
     - name: send-messages-to-dataflow
       container:
-        image: send-messages-to-workflow:1
+        image: with-argo-events:1
         args: ["{{workflow.name}}", "{{workflow.parameters.input-count}}"]
 
     - name: print-dataflow-processed-messages
@@ -46,7 +46,7 @@ spec:
           export AWS_ACCESS_KEY_ID=admin
           export AWS_SECRET_ACCESS_KEY=password
           export AWS_DEFAULT_REGION=us-west-2
-          aws --endpoint-url='http://moto:5000' s3 cp s3://output-bucket/ ./results --recursive
+          aws --endpoint-url='http://moto:5000' s3 cp s3://output-bucket/{{workflow.name}}/ ./results --recursive
           jq '.' results/*
           echo "Completed print-dataflow-processed-messages"
 

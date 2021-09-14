@@ -168,7 +168,7 @@ async def run(loop: AbstractEventLoop, workflow_name: str, inputs_count: int):
   for i in inputs:
     msg = json.dumps(i)
     print('Sending input to dataflow', msg)
-    await sc.publish(subject="argo-dataflow-system.101-two-node.stream-input", payload=msg.encode('utf-8'))
+    await sc.publish(subject="argo-dataflow-system.pipeline-with-argo-events.stream-input", payload=msg.encode('utf-8'))
 
   # Close NATS Streaming session
   await sc.close()

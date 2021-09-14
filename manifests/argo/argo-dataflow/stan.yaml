@@ -92,6 +92,21 @@ spec:
   selector:
     app: stan
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: stan-ui
+  name: stan-ui
+  namespace: argo-dataflow-system
+spec:
+  clusterIP: None
+  ports:
+  - name: ui
+    port: 8282
+  selector:
+    app: stan-ui
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -256,3 +271,34 @@ spec:
         requests:
           storage: 1Gi
       volumeMode: Filesystem
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: stan-ui
+  name: stan-ui
+  namespace: argo-dataflow-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stan-ui
+  template:
+    metadata:
+      labels:
+        app: stan-ui
+    spec:
+      containers:
+      - env:
+        - name: STAN_URL
+          value: 'http://nats:4222'
+        - name: STAN_MONITOR_URL
+          value: 'http://nats:8222'
+        - name: STAN_CLUSTER
+          value: 'stan'
+        image: piotrpersona/nats-streaming-ui:latest
+        name: stan-ui
+        ports:
+        - containerPort: 8282
+          name: ui

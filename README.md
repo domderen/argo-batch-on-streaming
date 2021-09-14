@@ -23,9 +23,8 @@ At this point, workflow would delete the Event Source & Sensor, since they serve
 k3d cluster create
 # Use k3d's default cluster config
 k3d kubeconfig merge -d -s
-# Build Docker image(s) used by this system
-docker buildx build ./docker_images/send-messages-to-workflow --tag send-messages-to-workflow:1 --load
-k3d image import send-messages-to-workflow:1
+# Build & imports Docker images used by this system
+./docker_images/build_and_import_images.sh
 # Apply kustomization files that install Argo-Dataflow, Argo-Workflows & Argo-Events
 kubectl apply -k manifests/argo
 # Wait for Kafka Input Pump to be up & running
@@ -33,20 +32,34 @@ kubectl -n argo-dataflow-system wait --for=condition=Ready --timeout=300s pod/in
 # Apply kustomization files that create Argo-Dataflow Pipeline, Argo-Events EventBus, Argo-Workflows WorkflowTemplate & S3 Bucket initialization job
 kubectl apply -k manifests/custom-objects
 # Wait for S3 bucket to be created
-kubectl -n argo-dataflow-system wait --for=condition=Complete --timeout=60s job/initialize-s3-bucket
+kubectl -n argo-dataflow-system wait --for=condition=Complete --timeout=90s job/initialize-s3-bucket
 # View Argo UI
 kubectl -n argo-dataflow-system port-forward svc/argo-server 2746:2746
-# IN A NEW TERMINAL: Install Kafka-UI
+```
+
+Open [http://localhost:2746](http://localhost:2746) to see Argo-UI.
+
+If you need to view Kafka messages:
+
+```bash
+# Install Kafka-UI
 helm repo add kafka-ui https://provectus.github.io/kafka-ui
 helm -n argo-dataflow-system upgrade -i kafka-ui kafka-ui/kafka-ui --set envs.config.KAFKA_CLUSTERS_0_NAME=kafka-broker --set envs.config.KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka-broker:9092
 # Wait for Kafka-UI to be ready
 kubectl -n argo-dataflow-system wait --for=condition=Ready --timeout=300s pod -l app.kubernetes.io/name=kafka-ui
 # View Kafka-UI
 kubectl -n argo-dataflow-system port-forward svc/kafka-ui 8080:80
-# IN A NEW TERMINAL: Open Argo-Server UI & Kafka UI
-open http://localhost:2746
-open http://localhost:8080
 ```
+
+Open [http://localhost:8080](http://localhost:8080) to see Kafka-UI.
+
+If you need to view NATS Streaming (STAN) messages:
+
+```bash
+kubectl -n argo-dataflow-system port-forward svc/stan-ui 8282:8282
+```
+
+Open [http://localhost:8282](http://localhost:8282) to see STAN-UI.
 
 ## Cluster teardown
 
